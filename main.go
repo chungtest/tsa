@@ -7,6 +7,7 @@ import (
   "strings"
   "database/sql"
   //"fmt"
+  "regexp"
   "log"
   _"github.com/denisenkom/go-mssqldb"
 )
@@ -44,6 +45,8 @@ func main() {
     r.Run(":8080")
 }
 
+// Add a new contact to the database
+// Should move this out to its own layer
 func NewContact (c *gin.Context) {
 
   var input ContactNums
@@ -108,6 +111,8 @@ func NewContact (c *gin.Context) {
   }
 }
 
+// Check to see if the contact request is valid
+// Is there a better was to handle validations in GO, need to look up
 func isValid (input ContactNums) ([]string, error) {
   var messages []string
 
@@ -121,6 +126,10 @@ func isValid (input ContactNums) ([]string, error) {
   if input.Email == "" {
     messages = append (messages, "The email is empty")
   }
+  re := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+  if !re.MatchString(input.Email) {
+    messages = append (messages, "The email does not appear to be a valid email address")
+  }
   if input.PhoneNumbers == nil {
     messages = append (messages, "The are no phone numbers")
   }
@@ -131,7 +140,8 @@ func isValid (input ContactNums) ([]string, error) {
   }
 }
 
-// check to see if the person exists
+// Check to see if the person exists
+// Used just before a insert or to if the contact exists by fullname
 func contactExists (name string) bool {
   db, err := sql.Open("sqlserver", "sqlserver://tsauser:tsapassword@localhost?database=tsa&connection+timeout=30")
 	if err != nil {
